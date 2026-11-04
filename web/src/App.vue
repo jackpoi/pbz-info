@@ -320,6 +320,7 @@ onBeforeUnmount(() => {
             <h2 id="boss-h">Boss 战绩</h2>
             <span class="count">{{ bosses.length }} 个 · 合计死亡 {{ totals?.bossDeaths ?? 0 }}</span>
           </header>
+          <div class="tablewrap">
           <table>
             <colgroup>
               <col />
@@ -377,6 +378,7 @@ onBeforeUnmount(() => {
               </tr>
             </tbody>
           </table>
+          </div>
         </section>
       </div>
     </template>

@@ -5,9 +5,9 @@ export const MOCK = {
   ok: true,
   meta: {
     source: 'main',
-    savePath: 'C:\\SteamLibrary\\steamapps\\common\\PBZ\\ProjectPBZ\\Saved\\SaveGames\\Steam\\00000000000000000\\PBZSaveGame.sav',
+    savePath: 'C:\\SteamLibrary\\steamapps\\common\\PBZ\\ProjectPBZ\\Saved\\SaveGames\\Steam\\12345678901234567\\PBZSaveGame.sav',
     fileName: 'PBZSaveGame.sav',
-    steamId: '00000000000000000',
+    steamId: '12345678901234567',
     slot: 'AutoSave0',
     savedAt: '2025-01-01 12:00:00',
     readAt: '2025-01-01 12:00:05',
@@ -43,4 +43,30 @@ export const MOCK = {
     { id: 'BP_Monster_MoTian_LongZhu_01', name: '金面具黑衣人', idx: 8, attempt: 11, kill: 1, deaths: 10, bestMs: 300000 },
     { id: 'BP_Monster_HuaQianXIao', name: '剑痴：花千笑', idx: 9, attempt: 6, kill: 0, deaths: 6, bestMs: null },
   ],
+}
+
+/**
+ * 只在开发时用：`index.html#mock=40` 会把样本重复铺到 40 条，
+ * 方便验证「Boss 很多」时的滚动与吸顶表头。生产构建里没人会带这个 hash。
+ */
+const wanted = Number(new URLSearchParams(location.hash.slice(1)).get('mock'))
+if (Number.isFinite(wanted) && wanted > MOCK.bosses.length) {
+  const base = MOCK.bosses
+  const extra = []
+  for (let i = base.length; i < wanted; i += 1) {
+    const source = base[i % base.length]
+    extra.push({
+      ...source,
+      id: `${source.id}_${i}`,
+      name: `${source.name} ${i + 1}`,
+      idx: i,
+      deaths: (i * 5) % 24,
+      attempt: (i * 5) % 24 + 1,
+      kill: i % 3 === 0 ? 0 : 1,
+    })
+  }
+  MOCK.bosses = [...base, ...extra]
+  MOCK.totals.bossDeaths = MOCK.bosses.reduce((sum, b) => sum + b.deaths, 0)
+  MOCK.totals.deaths = MOCK.totals.bossDeaths + 3
+  MOCK.totals.killed = MOCK.bosses.filter((b) => b.kill > 0).length
 }

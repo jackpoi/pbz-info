@@ -106,7 +106,7 @@ def _collect_bosses(
 
         attempt = _int(record.get("AttemptCount"))
         kill = _int(record.get("KillCount"))
-        best = record.get("BestTimeMs")
+        best = _int(record.get("BestTimeMs"))
         out.append(
             {
                 "id": boss_id,
@@ -115,7 +115,8 @@ def _collect_bosses(
                 "attempt": attempt,
                 "kill": kill,
                 "deaths": max(0, attempt - kill),
-                "bestMs": _int(best) if best is not None else None,
+                # 0 表示"没有可用的击杀时长"，界面显示破折号而不是 0:00.000
+                "bestMs": best if best > 0 else None,
             }
         )
     return out

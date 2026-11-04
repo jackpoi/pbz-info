@@ -64,6 +64,16 @@ def _unseal(key: bytes, block: bytes) -> bytes:
         raise ContainerError("GCM 校验失败（密钥不对，或文件正在写入）") from exc
 
 
+def _seal(key: bytes, payload: bytes, nonce: bytes) -> bytes:
+    """封块：magic(4) + 01 01 00 00(4) + nonce(12) + tag(16) + 密文。
+
+    AESGCM 返回的是「密文 || tag」，而文件的布局是「tag 在密文前」，这里拆开重排。
+    """
+    blob = AESGCM(key).encrypt(nonce, payload, None)
+    ciphertext, tag = blob[:-TAG_LEN], blob[-TAG_LEN:]
+    return BLOCK_MAGIC + b"\x01\x01\x00\x00" + nonce + tag + ciphertext
+
+
 def read_header(raw: bytes) -> tuple[int, int, int, int]:
     if len(raw) < HEADER.size:
         raise ContainerError("文件太短，不是 PBZS 容器")
@@ -132,3 +142,45 @@ def parse_container(
         except ValueError as exc:
             raise ContainerError(f"{record.name}: JSON 解析失败") from exc
     return out
+
+
+def build_container(records: dict[str, bytes], key: bytes, alg: int = ALG_ZLIB) -> bytes:
+    """把若干条记录打成 PBZS v3 容器。
+
+    只用于测试与生成假存档（tools/make_fake_save.py）；游戏本体只读不写。
+    """
+    nonce = b"\x00" * NONCE_LEN
+    header = HEADER.pack(BLOCK_MAGIC, 3, 1, len(records), 0)
+
+    payloads = [
+        (name, alg, len(data), zlib.compress(data) if alg == ALG_ZLIB else data)
+        for name, data in records.items()
+    ]
+
+    # 目录块的长度决定自己的偏移，得先算目录明文长度
+    def entry_len(name: str) -> int:
+        return 2 + len(name.encode()) + ENTRY_FIXED.size
+
+    dir_plain_len = HEADER.size + sum(entry_len(name) for name, *_ in payloads)
+    dir_block_len = BLOCK_PREFIX_LEN + NONCE_LEN + TAG_LEN + dir_plain_len
+
+    bodies: list[tuple[str, int, int, int, int]] = []
+    blobs: list[bytes] = []
+    rel = 0
+    for name, record_alg, raw_size, compressed in payloads:
+        block = _seal(key, compressed, nonce)
+        bodies.append((name, record_alg, raw_size, rel, len(block)))
+        blobs.append(block)
+        rel += len(block)
+
+    directory = bytearray(HEADER.pack(BLOCK_MAGIC, 3, 1, len(records), 0))
+    for name, record_alg, raw_size, rel_offset, block_size in bodies:
+        encoded = name.encode()
+        directory += struct.pack("<H", len(encoded)) + encoded
+        directory += ENTRY_FIXED.pack(record_alg, 0, raw_size, rel_offset, block_size)
+
+    dir_block = _seal(key, bytes(directory), nonce)
+    assert len(dir_block) == dir_block_len
+
+    head = HEADER.pack(BLOCK_MAGIC, 3, 1, len(records), len(dir_block))
+    return head + _seal(key, bytes(directory), nonce) + b"".join(blobs)

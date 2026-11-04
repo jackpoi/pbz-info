@@ -85,7 +85,14 @@ body {
 .btn.primary:hover { background: #2a1310; }
 
 /* ---------- canvas ---------- */
-.canvas { max-width: 1180px; margin: 0 auto; padding: 18px 22px 14px; }
+/* 整页不滚动：只有 Boss 列表自己滚，表头吸顶 */
+#app { display: flex; flex-direction: column; }
+.canvas {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
+  width: 100%; max-width: 1180px; margin: 0 auto; padding: 18px 22px 14px;
+}
+.titlerow, .kpis, .banner { flex: none; }
 .titlerow { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
 h1 { margin: 0; font-size: var(--fs-title); font-weight: 600; letter-spacing: -.01em; }
 .sub { color: var(--faint); font-size: 13px; }
@@ -127,12 +134,13 @@ h1 { margin: 0; font-size: var(--fs-title); font-weight: 600; letter-spacing: -.
 /* ---------- grid ---------- */
 .grid {
   margin-top: var(--gap);
+  flex: 1; min-height: 0;
   display: grid;
   grid-template-columns: 336px minmax(0, 1fr);
   gap: var(--gap);
   align-items: stretch;
 }
-.grid > * { min-width: 0; }
+.grid > * { min-width: 0; min-height: 0; }
 .panel {
   background: var(--surface);
   border-radius: var(--radius-card);
@@ -143,7 +151,7 @@ h1 { margin: 0; font-size: var(--fs-title); font-weight: 600; letter-spacing: -.
 .panel header .spacer { flex: 1; }
 .count { color: var(--faint); font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
 
-.railcard { display: flex; flex-direction: column; padding-bottom: 12px; }
+.railcard { display: flex; flex-direction: column; padding-bottom: 12px; overflow-y: auto; }
 .railcard .seclabel { margin: 16px 0 2px; color: var(--faint); font-size: var(--fs-small); }
 .railcard .note { margin: 14px 0 0; color: var(--faint); font-size: var(--fs-small); line-height: 1.6; }
 .railcard .tail { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--rule); display: flex; gap: 14px; }
@@ -167,9 +175,27 @@ h1 { margin: 0; font-size: var(--fs-title); font-weight: 600; letter-spacing: -.
 }
 
 /* ---------- table ---------- */
+/* Boss 多的时候只有这块滚：表头吸顶，面板整体不动 */
+.ledger { display: flex; flex-direction: column; padding: 14px 0 0; overflow: hidden; }
+.ledger > header { padding: 0 20px; flex: none; }
+.tablewrap { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding-bottom: 6px; }
+
+/* 深色滚动条：默认的亮色滚动条在暗面板上非常刺眼 */
+.tablewrap, .railcard {
+  scrollbar-width: thin;
+  scrollbar-color: #322c26 transparent;
+}
+.tablewrap::-webkit-scrollbar, .railcard::-webkit-scrollbar { width: 10px; }
+.tablewrap::-webkit-scrollbar-track, .railcard::-webkit-scrollbar-track { background: transparent; }
+.tablewrap::-webkit-scrollbar-thumb, .railcard::-webkit-scrollbar-thumb {
+  background: #322c26; border-radius: 6px; border: 2px solid transparent; background-clip: padding-box;
+}
+.tablewrap::-webkit-scrollbar-thumb:hover, .railcard::-webkit-scrollbar-thumb:hover { background: #453e35; background-clip: padding-box; }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 thead th {
   height: 32px;
+  position: sticky; top: 0; z-index: 2;
+  background: var(--surface);
   color: var(--faint); font-weight: 400; font-size: var(--fs-small);
   text-align: left; white-space: nowrap;
   border-bottom: 1px solid var(--border);
@@ -186,6 +212,9 @@ tbody tr:hover td { background: #17140f; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 td.state { color: var(--muted); font-size: 13px; }
 th.col-state, td.state { padding-left: 20px; }
+/* 面板改成左右 0 内边距之后，首尾列自己补回来 */
+.ledger th:first-child, .ledger td:first-child { padding-left: 20px; }
+.ledger th:last-child, .ledger td:last-child { padding-right: 20px; }
 
 .boss { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .boss .name { font-weight: 500; white-space: nowrap; }
@@ -230,8 +259,13 @@ tr.bump .death .v { color: var(--accent); }
   .kpis { grid-template-columns: repeat(2, 1fr); }
   .kpi:nth-child(3) { border-left: 0; border-top: 1px solid var(--border); }
   .kpi:nth-child(4) { border-top: 1px solid var(--border); }
-  .grid { grid-template-columns: 1fr; }
-  .ledger { overflow-x: auto; }
+  /* 单列时两卡上下排：整页滚动，列表不再自己滚 */
+  .canvas { overflow-y: auto; }
+  .grid { grid-template-columns: 1fr; flex: none; }
+  .railcard { overflow: visible; }
+  .ledger { overflow: visible; }
+  .tablewrap { overflow: visible; }
+  thead th { position: static; }
   table { table-layout: auto; min-width: 560px; }
   .bar { width: 56px; }
   thead th:nth-child(3), tbody td:nth-child(3) { display: none; }
