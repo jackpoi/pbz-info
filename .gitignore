@@ -1,0 +1,64 @@
+# ============================================================
+# 生成物 / 构建产物都不入库；仓库只保留能重建它们的源文件
+# 重建方式见 README（powershell -File build.ps1）
+# ============================================================
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+
+# ---- 虚拟环境 ----
+.venv/
+venv/
+
+# ---- 前端（web/ 下的 Vite 工程）----
+node_modules/
+web/.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- 打包产物 ----
+# dist/pbz-info.exe：发布时挂到 GitHub Releases，而不是提交进历史
+/dist/
+# web/dist/index.html：npm run build 的产物，run.py 和打 exe 时用到
+/web/dist/
+# PyInstaller 的工作目录。build/ 下其余文件是源：
+# pbz-info.spec / splash.html / make_icon.ps1，以及 app.ico、splash.png
+# （由 tools/build_assets.py 生成，但提交以保证图标和启动图在各机器上一致）
+/build/pbz-info/
+/build/work/
+
+# ---- 本地工具产物（设计/截图检查的临时输出）----
+.taste-skill/
+
+# ---- 需求/设计文档 ----
+# 暂不入库；后续计划拆成独立的私有仓库（见 README 的构建/开发说明）
+/docs/
+
+# ---- 测试代码与数据 ----
+# tests/fixtures 里有真实存档，脱敏前暂不入库
+/tests/
+
+# ---- 编辑器 / 操作系统 ----
+.vs/
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- 本地环境变量 ----
+.env
+.env.*
+!.env.example
