@@ -2,9 +2,7 @@
 
 读取《影之刃零》的本地存档，统计**当前周目**的 Boss 战绩：每个 Boss 的死亡数、击杀状态、最快击杀用时，以及本周目时长与总死亡。
 
-- 需求：`docs/requirements.md`
-- 设计：`docs/design.md`
-- 界面原型：`docs/prototype/index.html`（可直接用浏览器打开）
+- 需求 / 设计：本地维护，不随源码发布
 
 ## 当前进度
 
@@ -18,9 +16,24 @@
 
 ## 构建
 
+需要 Windows x64、Python 3.11+、Node 18+。
+
 ```powershell
+python -m pip install -r requirements-dev.txt
+cd web; npm ci; cd ..
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
+
+## 发布
+
+推送 `v*` 标签后，GitHub Actions 会在 Windows 上跑测试、构建，并创建 Release：
+
+```powershell
+git tag -a v0.1.0 -m "pbz-info v0.1.0"
+git push origin master --tags
+```
+
+工作流见 `.github/workflows/release.yml`：`master` 推送只跑测试与构建并上传 artifact；`v*` 标签才创建 Release，附件是 `pbz-info.exe` 和 `SHA256SUMS.txt`。
 
 ## 开发
 
