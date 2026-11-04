@@ -72,7 +72,13 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           name: pbz-info ${{ github.ref_name }}
+          body: |
+            Windows x64 单文件，无需安装游戏。
+
+            - 下载 `pbz-info.exe` 直接运行；首次缺少密钥时选择游戏的 `PBZ.exe`（每台机器一次）
+            - `SHA256SUMS.txt` 用于校验下载文件
+            - 未签名 exe，SmartScreen 可能提示「仍要运行」
+            - 完整变更：${{ github.server_url }}/${{ github.repository }}/commits/${{ github.ref_name }}
           files: |
             dist/pbz-info.exe
             dist/SHA256SUMS.txt
-          generate_release_notes: true
