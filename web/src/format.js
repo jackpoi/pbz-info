@@ -8,11 +8,12 @@ export function hms(seconds) {
 
 export function duration(ms) {
   if (ms == null) return ''
-  const m = Math.floor(ms / 60000)
-  const rest = ms % 60000
-  const s = Math.floor(rest / 1000)
-  const milli = rest % 1000
-  return `${m}:${String(s).padStart(2, '0')}.${String(milli).padStart(3, '0')}`
+  // 击杀用时按 0.1 秒取整：95 分钟这种长局也只需要一位小数
+  const tenths = Math.max(0, Math.round(ms / 100))
+  const minutes = Math.floor(tenths / 600)
+  const seconds = (tenths % 600) / 10
+  const text = seconds.toFixed(1).padStart(4, '0')
+  return minutes > 0 ? `${minutes}分${text}秒` : `${text}秒`
 }
 
 export function secondsAgo(ms, current = Date.now()) {

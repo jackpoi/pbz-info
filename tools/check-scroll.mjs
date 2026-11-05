@@ -128,27 +128,28 @@ async function main() {
       const wrap = document.querySelector('.tablewrap');
       const ledger = document.querySelector('.ledger').getBoundingClientRect();
       const rail = document.querySelector('.railcard').getBoundingClientRect();
-      const badges = [...document.querySelectorAll('tbody .badge-icon')].map((badge) => {
-        const cell = badge.closest('td').getBoundingClientRect();
-        const box = badge.getBoundingClientRect();
-        return {
-          key: badge.dataset.badge,
-          title: badge.querySelector('title')?.textContent ?? '',
-          label: badge.getAttribute('aria-label') ?? '',
-          inside: box.left >= cell.left - 1 && box.right <= cell.right + 1,
-          withText: badge.closest('td').textContent.includes('已击杀'),
-          width: Math.round(box.width),
-          height: Math.round(box.height),
-        };
-      });
+      const badges = [...document.querySelectorAll('tbody .badge-icon')];
       const diffs = [...document.querySelectorAll('tbody td.diff')].map((td) => ({
         text: td.textContent.trim(),
         clipped: td.scrollWidth > td.clientWidth + 1,
       }));
+      const times = [...document.querySelectorAll('tbody td:last-child')].map((td) => td.textContent.trim());
+      const bars = [...document.querySelectorAll('tbody tr .death')].map((cell) => {
+        const box = cell.getBoundingClientRect();
+        const track = cell.querySelector('.bar').getBoundingClientRect();
+        const fill = cell.querySelector('.bar i');
+        return {
+          inside: track.right <= box.right + 1,
+          width: Math.round(track.width),
+          fill: fill ? Math.round(fill.getBoundingClientRect().width) : 0,
+        };
+      });
       return {
         rows: document.querySelectorAll('tbody tr').length,
-        badges,
+        badges: badges.length,
         diffs,
+        times,
+        bars,
         scrollHeight: wrap.scrollHeight,
         clientHeight: wrap.clientHeight,
         scrollTop: wrap.scrollTop,
@@ -215,17 +216,21 @@ async function main() {
   if (info.pageScrolls) problems.push("整页出现了滚动条");
   if (info.ledgerBottom > info.viewport.h + 1) problems.push("表格面板超出窗口");
   if (info.railBottom > info.viewport.h + 1) problems.push("左侧卡超出窗口");
-  if (!info.badges.length) problems.push("没有渲染一命通关徽章");
-  if (info.badges.some((badge) => badge.key !== "firstTry")) problems.push("徽章标记不是 firstTry");
-  if (info.badges.some((badge) => badge.title !== "一命通关" || badge.label !== "一命通关")) {
-    problems.push("徽章提示不是“一命通关”");
-  }
-  if (info.badges.some((badge) => !badge.withText)) problems.push("徽章没有跟在“已击杀”之后");
-  if (info.badges.some((badge) => !badge.inside)) problems.push("徽章超出所在单元格");
+  if (info.badges) problems.push("徽章应当已移除");
   if (info.diffs.length !== ROWS) problems.push("难度列缺失");
   if (info.diffs.some((diff) => !diff.text || diff.text === "—")) problems.push("难度列有空值");
   if (info.diffs.some((diff) => diff.clipped)) problems.push("难度列文字被裁剪");
   if (new Set(info.diffs.map((diff) => diff.text)).size < 2) problems.push("难度列没有体现不同难度");
+  if (info.bars.length !== ROWS) problems.push("死亡长度条缺失");
+  if (info.bars.some((bar) => !bar.inside)) problems.push("长度条超出所在单元格");
+  if (info.bars.some((bar) => bar.width < 30)) problems.push("长度条轨道过窄");
+  if (info.bars.some((bar) => bar.fill > bar.width + 1)) problems.push("长度条溢出轨道");
+  if (new Set(info.bars.map((bar) => bar.fill)).size < 2) problems.push("长度条没有体现长短差异");
+  if (info.times.length !== ROWS) problems.push("击杀用时列缺失");
+  if (info.times.some((text) => text !== "—" && !/^(\d+分)?\d+\.\d秒$/.test(text))) {
+    problems.push("击杀用时不是“x分x.x秒”");
+  }
+  if (info.times.some((text) => text.includes(":"))) problems.push("击杀用时仍是旧格式");
 
   console.log(JSON.stringify({ rows: ROWS, viewport: [WIDTH, HEIGHT], problems }, null, 2));
 

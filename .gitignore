@@ -33,7 +33,7 @@ pnpm-debug.log*
 # web/dist/index.html：npm run build 的产物，run.py 和打 exe 时用到
 /web/dist/
 # PyInstaller 的工作目录。build/ 下其余文件是源：
-# pbz-info.spec / splash.html / make_icon.ps1，以及 app.ico、splash.png
+# pbz-info.spec / splash.html，以及 app.ico、splash.png
 # （由 tools/build_assets.py 生成，但提交以保证图标和启动图在各机器上一致）
 /build/pbz-info/
 /build/work/

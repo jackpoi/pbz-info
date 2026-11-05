@@ -56,7 +56,7 @@ body {
   padding: 0 22px;
   border-bottom: 1px solid var(--border);
 }
-.mark { width: 22px; height: 22px; flex: none; }
+.mark { width: 32px; height: 32px; flex: none; object-fit: contain; }
 .wordmark { font-size: 14px; font-weight: 500; letter-spacing: .02em; white-space: nowrap; }
 .topbar .spacer { flex: 1; }
 .scope {
@@ -204,8 +204,6 @@ thead th {
 thead th:hover { color: var(--muted); }
 thead th.num { text-align: right; }
 thead th .arrow { color: var(--muted); margin-left: 4px; }
-/* "死亡"表头对齐到数字轨道末端，而不是长度条末端 */
-th.col-death > .hlabel { display: block; margin-right: 152px; text-align: right; }
 tbody td { height: 44px; border-bottom: 1px solid var(--rule); vertical-align: middle; padding: 0; }
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr:hover td { background: #17140f; }
@@ -232,13 +230,10 @@ td.diff {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .boss.is-unknown .id { color: var(--muted); font-size: 13px; }
-/* 唯一一枚战绩徽章：放在"击杀"列的"已击杀"之后；当前是占位图形，替换时不动判定与布局 */
-.badge-icon {
-  width: 15px; height: 15px;
-  margin-left: 6px; vertical-align: -2px;
-  color: var(--muted);
-}
+/* "死亡"表头对齐到数字轨道末端，而不是长度条末端 */
+th.col-death > .hlabel { display: block; margin-right: 152px; text-align: right; }
 
+/* 死亡列：先读数字，再看条长；只画条本身，不画轨道底 */
 .death { display: grid; grid-template-columns: 1fr 140px; gap: 12px; align-items: center; }
 .bar { height: 6px; }
 .bar i { display: block; height: 100%; background: var(--fill); border-radius: 2px; transition: width 320ms ease; }
@@ -282,13 +277,13 @@ tr.bump .death .v { color: var(--accent); }
   .tablewrap { overflow: visible; }
   thead th { position: static; }
   table { table-layout: auto; min-width: 560px; }
-  .bar { width: 56px; }
   /* 窄屏只留 Boss / 死亡 / 难度；击杀状态与用时让位 */
   thead th:nth-child(3), tbody td:nth-child(3),
   thead th:nth-child(5), tbody td:nth-child(5) { display: none; }
   .ledger th:nth-child(4), .ledger td:nth-child(4) { padding-right: 20px; }
   .death { grid-template-columns: 1fr 56px; }
   th.col-death > .hlabel { margin-right: 68px; }
+  .bar { width: 56px; }
 }
 @media (max-width: 720px) {
   .wordmark, .stamp { display: none; }

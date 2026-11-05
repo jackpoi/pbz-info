@@ -209,11 +209,7 @@ onBeforeUnmount(() => {
 
 <template>
   <header class="topbar">
-    <svg class="mark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M4.5 19.5 19 5" stroke="#d24a32" stroke-width="2.4" stroke-linecap="round" />
-      <path d="M14 4h6v6" stroke="#d24a32" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
-      <path d="M4 12.5h6.5" stroke="#6b5f54" stroke-width="1.6" stroke-linecap="round" />
-    </svg>
+    <img class="mark" src="./assets/app-icon.png" alt="" />
     <div class="wordmark">影之刃零</div>
     <div class="spacer"></div>
     <div v-if="meta?.steamId" class="scope" title="Steam 账号">
@@ -331,9 +327,9 @@ onBeforeUnmount(() => {
             <colgroup>
               <col />
               <col style="width: 200px" />
-              <col style="width: 88px" />
+              <col style="width: 96px" />
               <col style="width: 80px" />
-              <col style="width: 90px" />
+              <col style="width: 120px" />
             </colgroup>
             <thead>
               <tr>
@@ -384,20 +380,6 @@ onBeforeUnmount(() => {
                 </td>
                 <td class="state">
                   <template v-if="row.kill > 0">已击杀</template>
-                  <svg
-                    v-if="row.firstTry"
-                    class="badge-icon"
-                    data-badge="firstTry"
-                    viewBox="0 0 16 16"
-                    role="img"
-                    aria-label="一命通关"
-                  >
-                    <title>一命通关</title>
-                    <path
-                      d="M8 1.7l1.9 4.2 4.6.5-3.4 3.1.9 4.5L8 11.9 4 14l.9-4.5L1.5 6.4l4.6-.5L8 1.7Z"
-                      fill="currentColor"
-                    />
-                  </svg>
                 </td>
                 <td
                   class="diff"

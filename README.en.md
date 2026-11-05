@@ -23,6 +23,7 @@ The game does not need to be running. If no key is cached yet, select the game's
 |---|---|
 | Current-cycle scope | Current cycle only; the boss list spans difficulties, and a boss never repeats across them |
 | Boss records | Deaths, kill status, kill difficulty and best clear time for every boss |
+| Readable times | Clear times show as `5分00.0秒` / `45.0秒` instead of milliseconds |
 | Run overview | Cycle playtime, total deaths and bosses defeated |
 | Auto refresh | Re-reads after the save changes; keeps the last good snapshot if reading fails |
 | Manual selection | Choose a `.sav` file or a folder containing `PBZSaveGame.sav` when auto-detection fails |
