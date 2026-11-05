@@ -27,7 +27,8 @@ The game does not need to be running. If no key is cached yet, select the game's
 | Run overview | Cycle playtime, total deaths and bosses defeated |
 | Auto refresh | Re-reads after the save changes; keeps the last good snapshot if reading fails |
 | Manual selection | Choose a `.sav` file or a folder containing `PBZSaveGame.sav` when auto-detection fails |
-| Read-only, offline | Never writes saves or game files, never accesses the network |
+| Read-only, offline | Never writes saves or game files |
+| About / updates | The About dialog shows the version and project link; “Check for updates” reads the latest GitHub release once and offers a link when a newer version exists |
 | Single executable | PyInstaller onefile build; double-click to run |
 
 ## Usage
@@ -53,7 +54,7 @@ The output is `dist/pbz-info.exe`.
 
 ```powershell
 python run.py                      # launch the window (build the frontend first)
-python -m pytest tests -q          # 79 regression tests (2 need real game data; skipped by default)
+python -m pytest tests -q          # 110 regression tests (2 need real game data; skipped by default)
 python tools\dump.py               # print normalized save JSON
 python tools\dump.py --save-dir "D:\...\Steam\<SteamID>"
 ```
@@ -95,7 +96,7 @@ build/        PyInstaller spec and packaging assets
 
 ## Read-only guarantee
 
-This app does not write save files, modify game files, or access the network.
+This app does not write save files or modify game files. It stays offline unless you press “Check for updates”, which performs a single read of the latest GitHub release.
 
 ## License
 

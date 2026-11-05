@@ -16,6 +16,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 版本号只有一个来源：app/__init__.py。tag 与它不一致就拒绝发布，
+      - name: Verify version matches tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: python
+        run: |
+          import os, pathlib, re, sys
+          text = pathlib.Path("app/__init__.py").read_text(encoding="utf-8")
+          match = re.search(r'__version__\s*=\s*["\']([^"\']+)', text)
+          version = match.group(1) if match else ""
+          tag = os.environ["GITHUB_REF_NAME"].lstrip("v")
+          if not version or version != tag:
+              sys.exit(f"version mismatch: __version__ = {version!r}, tag = {tag!r}")
+          print(f"version ok: {version}")
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"

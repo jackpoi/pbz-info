@@ -11,8 +11,21 @@ import sys
 import threading
 from pathlib import Path
 
+from . import __version__
 from . import config as config_mod
 from . import discovery, service as service_mod
+from . import update as update_mod
+
+
+def _open_url(url: str) -> bool:
+    """用系统默认浏览器打开外链。file:// 页面里 window.open 不可靠，统一走这里。"""
+    if sys.platform != "win32":
+        return False
+    try:
+        os.startfile(url)  # noqa: S606 - 参数是我们自己写死的 https 地址
+    except OSError:
+        return False
+    return True
 
 
 class Bridge:
@@ -183,6 +196,32 @@ class Bridge:
 
     def get_config(self) -> dict:
         return dict(self._config)
+
+    # -------------------------------------------------------------------- 版本
+
+    def get_version(self) -> dict:
+        return {
+            "version": __version__,
+            "repo": update_mod.REPO,
+            "releasesPage": update_mod.RELEASES_PAGE,
+        }
+
+    def check_update(self) -> dict:
+        """只有用户点“检查更新”才会走到这里；启动时不调用。"""
+        try:
+            return update_mod.check()
+        except Exception as exc:  # noqa: BLE001 - 检查更新绝不把界面打崩
+            return {
+                "ok": False,
+                "current": __version__,
+                "error": {"code": "UNEXPECTED", "message": f"{type(exc).__name__}: {exc}"},
+            }
+
+    def open_url(self, url: str) -> dict:
+        """只允许打开发布页 / 仓库地址这类 https 外链，不接受任意输入。"""
+        if not isinstance(url, str) or not url.startswith("https://github.com/jackpoi/pbz-info"):
+            return {"ok": False, "error": {"code": "BAD_URL", "message": "只支持项目自己的 GitHub 地址"}}
+        return {"ok": _open_url(url)}
 
     def set_view(self, sort: str, direction: int) -> dict:
         self._config.setdefault("view", {})

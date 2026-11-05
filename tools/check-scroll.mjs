@@ -194,6 +194,69 @@ async function main() {
 
   await shot(client, join(outDir, `long-${ROWS}-bottom.png`));
 
+  // 关于弹窗：版本号、Esc 关闭
+  const about = await evaluate(
+    client,
+    `(async () => {
+      const btn = [...document.querySelectorAll('.railcard .tail .link')]
+        .find((el) => el.textContent.trim() === '关于');
+      if (!btn) return { found: false };
+      btn.click();
+      await new Promise((r) => setTimeout(r, 120));
+      const modal = document.querySelector('.modal');
+      const version = document.querySelector('.about-ver')?.textContent?.trim() ?? '';
+      const repoLink = document.querySelector('.about-link');
+      const box = modal?.getBoundingClientRect();
+      const inView = box ? box.top >= 0 && box.bottom <= window.innerHeight + 1 && box.left >= 0 && box.right <= window.innerWidth + 1 : false;
+      return {
+        found: true,
+        open: Boolean(modal),
+        version,
+        inView,
+        repoLink: repoLink ? { tag: repoLink.tagName, text: repoLink.textContent.trim() } : null,
+        rows: [...document.querySelectorAll('.about-list .kvrow dt')].map((el) => el.textContent.trim()),
+        hasCheckButton: [...document.querySelectorAll('.modal .btn')].some((el) => el.textContent.includes('检查更新')),
+      };
+    })()`,
+  );
+
+  await shot(client, join(outDir, `about-${ROWS}.png`));
+
+  const aboutClosed = await evaluate(
+    client,
+    `(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      await new Promise((r) => setTimeout(r, 120));
+      return !document.querySelector('.modal');
+    })()`,
+  );
+
+  // 检查更新的成功分支：注入一个假桥，看"发布页版本 + 可更新"的呈现
+  const updateText = await evaluate(
+    client,
+    `(async () => {
+      window.pywebview = { api: { check_update: async () => ({
+        ok: true, current: '0.2.0', latest: 'v9.9.9', hasUpdate: true,
+        url: 'https://github.com/jackpoi/pbz-info/releases/tag/v9.9.9', publishedAt: '2026-11-06',
+      }) } };
+      const btn = [...document.querySelectorAll('.railcard .tail .link')].find((el) => el.textContent.trim() === '关于');
+      btn.click();
+      await new Promise((r) => setTimeout(r, 120));
+      [...document.querySelectorAll('.modal .btn')].find((el) => el.textContent.includes('检查更新')).click();
+      await new Promise((r) => setTimeout(r, 260));
+      const msg = document.querySelector('.update-msg')?.textContent?.replace(/\\s+/g, ' ').trim() ?? '';
+      const box = document.querySelector('.modal').getBoundingClientRect();
+      return {
+        msg,
+        canUpdate: Boolean(document.querySelector('.can-update')),
+        hasButton: [...document.querySelectorAll('.modal .btn')].some((el) => el.textContent.includes('前往发布页')),
+        fits: box.bottom <= window.innerHeight + 1,
+      };
+    })()`,
+  );
+
+  await shot(client, join(outDir, `about-update-${ROWS}.png`));
+
   // 按出现顺序升序，把"一命通关"样本行（idx 1）放到第二行，便于肉眼核对徽章
   await evaluate(
     client,
@@ -231,7 +294,19 @@ async function main() {
     problems.push("击杀用时不是“x分x.x秒”");
   }
   if (info.times.some((text) => text.includes(":"))) problems.push("击杀用时仍是旧格式");
-
+  if (!about.found) problems.push("左侧卡没有「关于」入口");
+  if (!about.open) problems.push("关于弹窗没有打开");
+  if (!about.inView) problems.push("关于弹窗超出窗口");
+  if (!/^v\d+\.\d+\.\d+/.test(about.version)) problems.push("关于弹窗没有版本号");
+  if (!about.hasCheckButton) problems.push("关于弹窗没有「检查更新」按钮");
+  if (about.repoLink?.tag !== "BUTTON") problems.push("项目地址不是可点击的按钮");
+  if (!about.repoLink?.text.includes("github.com/jackpoi/pbz-info")) problems.push("项目地址文案不对");
+  if (about.rows.includes("联网") || about.rows.includes("存档")) problems.push("联网/存档两行应当已删除");
+  if (!aboutClosed) problems.push("Esc 没关掉关于弹窗");
+  if (!updateText.msg.includes('v9.9.9')) problems.push(`检查更新没显示发布页版本号：${updateText.msg}`);
+  if (!updateText.canUpdate) problems.push("有新版本时没有「可更新」提示");
+  if (!updateText.hasButton) problems.push("有新版本时没有「前往发布页」按钮");
+  if (!updateText.fits) problems.push("更新提示把弹窗撑出窗口");
   console.log(JSON.stringify({ rows: ROWS, viewport: [WIDTH, HEIGHT], problems }, null, 2));
 
   client.close();

@@ -13,6 +13,11 @@ const bumped = ref(new Set())
 const busy = ref(false)
 const hasBridge = ref(false)
 
+/* 关于 / 更新 */
+const VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '0.0.0'
+const showAbout = ref(false)
+const updateState = ref({ status: 'idle' }) // idle | checking | done | failed
+
 const api = () => window.pywebview?.api ?? null
 
 /* ---------------------------------------------------------------- 数据 */
@@ -89,6 +94,64 @@ async function oneShot(method) {
   try {
     await bridge[method]()
   } catch { /* 用户取消 */ }
+}
+
+/* ---------------------------------------------------------------- 关于 */
+
+function openAbout() {
+  showAbout.value = true
+  updateState.value = { status: 'idle' }
+}
+
+function closeAbout() {
+  showAbout.value = false
+}
+
+async function checkUpdate() {
+  if (updateState.value.status === 'checking') return
+  updateState.value = { status: 'checking' }
+  const bridge = api()
+  if (!bridge?.check_update) {
+    // 浏览器里跑（vite dev）：没有后端，直接给发布页
+    updateState.value = { status: 'failed', message: '开发模式下不检查更新' }
+    return
+  }
+  try {
+    const res = await bridge.check_update()
+    if (!res?.ok) {
+      updateState.value = {
+        status: 'failed',
+        message: res?.error?.message || '检查失败',
+      }
+    } else {
+      // 只展示发布页的最新版本号；比本地新才提示"可更新"
+      updateState.value = {
+        status: 'done',
+        latest: res.latest,
+        hasUpdate: Boolean(res.hasUpdate),
+        url: res.url,
+      }
+    }
+  } catch (err) {
+    updateState.value = { status: 'failed', message: String(err) }
+  }
+}
+
+async function openReleases() {
+  await openExternal(updateState.value.url || 'https://github.com/jackpoi/pbz-info/releases')
+}
+
+async function openRepo() {
+  await openExternal('https://github.com/jackpoi/pbz-info')
+}
+
+async function openExternal(url) {
+  const bridge = api()
+  if (bridge?.open_url) {
+    await bridge.open_url(url)
+    return
+  }
+  window.open(url, '_blank', 'noopener')
 }
 
 /* ---------------------------------------------------------------- 派生 */
@@ -182,6 +245,7 @@ let clockTimer = null
 onMounted(() => {
   hasBridge.value = Boolean(api())
   clockTimer = setInterval(() => { now.value = Date.now() }, 500)
+  window.addEventListener('keydown', onKeydown)
   if (hasBridge.value) {
     loadViewPrefs()
     tick()
@@ -200,10 +264,15 @@ function onReady() {
   if (!dataTimer) dataTimer = setInterval(() => tick(), 1000)
 }
 
+function onKeydown(event) {
+  if (event.key === 'Escape' && showAbout.value) closeAbout()
+}
+
 onBeforeUnmount(() => {
   clearInterval(dataTimer)
   clearInterval(clockTimer)
   window.removeEventListener('pywebviewready', onReady)
+  window.removeEventListener('keydown', onKeydown)
 })
 </script>
 
@@ -314,6 +383,7 @@ onBeforeUnmount(() => {
               type="button"
               @click="oneShot('use_main_save')"
             >回到主存档</button>
+            <button class="link" type="button" @click="openAbout">关于</button>
           </div>
         </section>
 
@@ -400,4 +470,53 @@ onBeforeUnmount(() => {
       </div>
     </template>
   </main>
+
+  <!-- 关于：版本号 + 检查更新。Esc 关闭；点遮罩也关闭 -->
+  <div v-if="showAbout" class="modal-backdrop" @click.self="closeAbout">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="about-h">
+      <header>
+        <h2 id="about-h">关于</h2>
+        <button class="link modal-x" type="button" aria-label="关闭" @click="closeAbout">✕</button>
+      </header>
+
+      <div class="about-body">
+        <div class="about-title">
+          <img class="mark" src="./assets/app-icon.png" alt="" />
+          <div>
+            <div class="about-name">影之刃零 · 生涯战绩面板</div>
+            <div class="about-ver mono" title="exe 文件属性里的版本号来自同一处">v{{ VERSION }}</div>
+          </div>
+        </div>
+
+        <dl class="about-list">
+          <div class="kvrow">
+            <dt>项目地址</dt>
+            <dd class="mono">
+              <button class="link about-link" type="button" @click="openRepo">github.com/jackpoi/pbz-info</button>
+            </dd>
+          </div>
+          <div class="kvrow"><dt>许可</dt><dd>MIT</dd></div>
+        </dl>
+
+        <div class="update-row">
+          <button class="btn" type="button" :disabled="updateState.status === 'checking'" @click="checkUpdate">
+            {{ updateState.status === 'checking' ? '检查中…' : '检查更新' }}
+          </button>
+          <span v-if="updateState.status === 'done'" class="update-msg">
+            发布页 <b class="mono">{{ updateState.latest || '未知' }}</b>
+            <template v-if="updateState.hasUpdate"> · <span class="can-update">可更新</span></template>
+          </span>
+          <span v-else-if="updateState.status === 'failed'" class="update-msg bad">
+            {{ updateState.message }}
+          </span>
+          <button
+            v-if="updateState.status === 'done' && updateState.hasUpdate"
+            class="btn primary"
+            type="button"
+            @click="openReleases"
+          >前往发布页</button>
+        </div>
+      </div>
+    </section>
+  </div>
 </template>

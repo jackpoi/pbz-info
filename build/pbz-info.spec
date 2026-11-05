@@ -84,4 +84,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=str(ROOT / "build" / "app.ico"),
+    version=str(ROOT / "build" / "version_info.txt"),
 )

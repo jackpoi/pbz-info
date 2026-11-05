@@ -26,7 +26,8 @@
 | 生涯概览 | 本周目时长、总死亡、已击败 Boss 数 |
 | 自动刷新 | 存档变化后自动重读；读取失败时保留上一次结果 |
 | 手动指定 | 找不到游戏时，直接选 `.sav` 文件或包含 `PBZSaveGame.sav` 的目录 |
-| 只读离线 | 不写存档、不改游戏文件、不联网 |
+| 只读离线 | 不写存档、不改游戏文件 |
+| 关于 / 检查更新 | 弹窗显示版本号与项目地址；点“检查更新”只读一次 GitHub Releases，有新版本时给出发布页入口 |
 | 单文件 | PyInstaller onefile，双击即用 |
 
 ## 使用
@@ -52,7 +53,7 @@ powershell -ExecutionPolicy Bypass -File build.ps1
 
 ```powershell
 python run.py                      # 启动窗口（需要先构建前端）
-python -m pytest tests -q          # 79 项回归测试（2 项需真实游戏资源，默认跳过）
+python -m pytest tests -q          # 110 项回归测试（2 项需真实游戏资源，默认跳过）
 python tools\dump.py               # 打印当前存档归一化后的 JSON
 python tools\dump.py --save-dir "D:\...\Steam\<SteamID>"
 ```
@@ -95,7 +96,7 @@ build/        PyInstaller spec 与打包资源
 
 ## 只读保证
 
-不写存档、不改游戏文件、不联网。
+不写存档、不改游戏文件。除你主动点击“检查更新”（只读一次 GitHub Releases 的 latest）外不联网。
 
 ## 许可证
 

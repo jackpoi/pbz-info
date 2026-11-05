@@ -154,7 +154,7 @@ h1 { margin: 0; font-size: var(--fs-title); font-weight: 600; letter-spacing: -.
 .railcard { display: flex; flex-direction: column; padding-bottom: 12px; overflow-y: auto; }
 .railcard .seclabel { margin: 16px 0 2px; color: var(--faint); font-size: var(--fs-small); }
 .railcard .note { margin: 14px 0 0; color: var(--faint); font-size: var(--fs-small); line-height: 1.6; }
-.railcard .tail { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--rule); display: flex; gap: 14px; }
+.railcard .tail { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; gap: 6px 14px; }
 .kvrow.sep { margin-top: 14px; }
 .kvrow {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -244,6 +244,41 @@ tr.bump .death .v { color: var(--accent); }
 .dash { color: #6b635b; }
 
 .empty { padding: 40px 0 46px; color: var(--faint); font-size: 13px; text-align: center; }
+
+/* ---------- modal（关于） ---------- */
+/* 唯一允许出现半透明遮罩的地方；面板本身仍是纯色，没有渐变和阴影 */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(6, 5, 4, .72);
+}
+.modal {
+  width: min(460px, calc(100vw - 48px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 14px 20px 20px;
+}
+.modal > header { display: flex; align-items: center; height: 34px; margin-bottom: 6px; }
+.modal h2 { margin: 0; font-size: var(--fs-section); font-weight: 500; }
+.modal-x {
+  margin-left: auto; border: 0; background: transparent;
+  color: var(--faint); font-size: 14px; line-height: 1;
+  cursor: pointer; padding: 4px;
+}
+.modal-x:hover { color: var(--text); }
+
+.about-title { display: flex; align-items: center; gap: 12px; padding: 4px 0 14px; }
+.about-name { font-size: 14px; }
+.about-ver { margin-top: 2px; color: var(--faint); font-size: 12px; }
+.about-list { margin: 0; }
+.update-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 12px; margin-top: 16px; }
+.update-row .btn { margin-left: 0; }
+.update-msg { color: var(--muted); font-size: 12px; }
+.update-msg b { color: var(--text); font-weight: 500; }
+.update-msg.bad { color: var(--muted); }
+.can-update { color: var(--accent); }
+.about-link { font-size: 12px; border-bottom-color: var(--rule); }
 
 /* ---------- states ---------- */
 .statepage {
