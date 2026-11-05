@@ -27,7 +27,6 @@ The game does not need to be running. If no key is cached yet, select the game's
 | Auto refresh | Re-reads after the save changes; keeps the last good snapshot if reading fails |
 | Manual selection | Choose a `.sav` file or a folder containing `PBZSaveGame.sav` when auto-detection fails |
 | Read-only, offline | Never writes saves or game files |
-| About / updates | The About dialog shows the version and project link; “Check for updates” reads the latest GitHub release once and offers a link when a newer version exists |
 | Single executable | PyInstaller onefile build; double-click to run |
 
 ## Usage
