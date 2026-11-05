@@ -2,6 +2,8 @@
 
 读取《影之刃零》的本地存档，统计**当前周目**的 Boss 战绩：每个 Boss 的死亡数、击杀状态、最快击杀用时，以及本周目时长与总死亡。
 
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+
 ## 当前进度
 
 | 里程碑 | 状态 |
@@ -67,7 +69,11 @@ npm run build                      # 产出 web/dist/index.html（单文件，�
 
 ## 只读保证
 
-不写存档、不改游戏文件、不联网。。
+不写存档、不改游戏文件、不联网。
+
+## 许可证
+
+[MIT](LICENSE)。`native/pbz_codec.dll` 及其上游组件按各自许可分发，见 [THIRD-PARTY.md](THIRD-PARTY.md) 与 [LICENSES/](LICENSES/)。
 
 ## 第三方
 
