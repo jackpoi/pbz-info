@@ -15,8 +15,10 @@ from pathlib import Path
 
 import webview
 
+from . import __version__
 from . import bridge as bridge_mod
 from . import config as config_mod
+from . import logs
 from . import service as service_mod
 
 APP_NAME = "pbz-info"
@@ -101,19 +103,37 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--debug", action="store_true", help="打开开发者工具")
     ap.add_argument("--save-dir", type=Path, default=None, help="指定存档目录（临时覆盖配置）")
     ap.add_argument("--config", type=Path, default=None, help="指定配置文件路径")
+    ap.add_argument("--verbose", action="store_true", help="记录每次轮询（排查用）")
     args = ap.parse_args(argv)
 
+    # 日志要早于配置读取：配置坏了才有地方记。
+    log_file = logs.configure()
+    log = logs.get("main")
+    if args.verbose:
+        logs.set_level("debug")
+
     if single_instance() is None:
+        log.info("已有实例在运行，本次启动安静退出")
         return 0  # 已经有一个在跑，安静退出
 
     config_path = args.config or config_mod.default_path()
     config = config_mod.load(config_path)
     if args.save_dir:
         config["saveDir"] = str(args.save_dir)
+    if not args.verbose:
+        logs.set_level((config.get("log") or {}).get("level") or "info")
 
     cache_dir = config_mod.default_dir()
     service = service_mod.Service(cache_dir=cache_dir, exe_path=config.get("exePath"))
     bridge = bridge_mod.Bridge(service, config, config_path=config_path)
+
+    log.info(
+        "启动 v%s · 打包=%s · config=%s · logs=%s",
+        __version__,
+        getattr(sys, "frozen", False),
+        config_path,
+        log_file or "（不可写）",
+    )
 
     geometry = config.get("window") or {}
     window = webview.create_window(
@@ -151,15 +171,18 @@ def main(argv: list[str] | None = None) -> int:
     try:
         webview.start(debug=args.debug)
     except Exception as exc:  # noqa: BLE001 - 窗口版没有控制台，必须弹出来
+        log.exception("窗口启动失败")
         if sys.platform == "win32":
             ctypes.windll.user32.MessageBoxW(
                 None,
                 f"启动失败：{type(exc).__name__}: {exc}\n\n"
-                "如果提示缺少 WebView2，请安装 Microsoft Edge WebView2 Runtime 后重试。",
+                "如果提示缺少 WebView2，请安装 Microsoft Edge WebView2 Runtime 后重试。\n"
+                f"日志：{log_file or '（不可写）'}",
                 WINDOW_TITLE,
                 0x10,  # MB_ICONERROR
             )
         return 1
+    log.info("退出")
     return 0
 
 

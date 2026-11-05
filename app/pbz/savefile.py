@@ -8,6 +8,10 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
+from .. import logs
+
+log = logs.get("savefile")
+
 DEFAULT_DELAYS = (0.1, 0.3, 0.9)
 
 
@@ -23,9 +27,12 @@ def read_bytes(path: Path, delays: tuple[float, ...] = DEFAULT_DELAYS) -> bytes:
             with path.open("rb") as fh:
                 return fh.read()
         except FileNotFoundError as exc:
+            log.warning("存档不见了 · %s", path)
             raise ReadError(f"文件不存在：{path}") from exc
         except OSError as exc:
             last = exc
+            # 游戏正在同一瞬间写存档：记下来，这样"读了几次才成功"有据可查
+            log.warning("读取第 %d 次失败，%.1fs 后重试 · %s · %s", attempt + 1, delays[attempt], path.name, exc)
             time.sleep(delays[attempt])
     raise ReadError(f"读取失败：{path}（{last}）")
 

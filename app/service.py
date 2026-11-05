@@ -7,14 +7,18 @@
 from __future__ import annotations
 
 import sys
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from . import discovery, mapping as mapping_mod, stats
+from . import logs
 from .pbz import codec as codec_mod
 from .pbz import container, key as key_mod, savefile
+
+log = logs.get("service")
 
 ERROR_NO_GAME = "NO_GAME"
 ERROR_NO_SAVE = "NO_SAVE"
@@ -56,6 +60,7 @@ class Service:
         self._codec: codec_mod.Codec | None = None
         self._last: dict | None = None
         self._signature: tuple[int, int] | None = None
+        self._last_error: str | None = None
         self._exe_override: Path | None = Path(exe_path) if exe_path else None
 
     def set_exe(self, exe_path: Path | str | None) -> None:
@@ -100,6 +105,12 @@ class Service:
         account = next((a for a in accounts if a.has_main), None)
         if account is None:
             raise ServiceError(ERROR_NO_SAVE, "存档账号目录里没有 PBZSaveGame.sav")
+        log.info(
+            "自动定位 · 安装=%s · 账号=%d 个 · 选用=%s",
+            install,
+            len(accounts),
+            account.steam_id,
+        )
         return Location(account.main_save, self._exe_override or exe, account.save_dir, account.steam_id)
 
     @staticmethod
@@ -137,10 +148,12 @@ class Service:
             location = self.locate(save_dir, save_path)
             signature = savefile.stat_signature(location.save_path)
             if not force and signature is not None and signature == self._signature and self._last:
+                log.debug("存档未变化（%s），直接返回缓存", signature)
                 return self._last
         except ServiceError as exc:
             return self._failure(exc.code, exc.message)
 
+        started = time.monotonic()
         try:
             view = self._parse(location)
         except ServiceError as exc:
@@ -150,10 +163,21 @@ class Service:
         except container.ContainerError as exc:
             return self._failure(ERROR_PARSE_FAIL, str(exc))
         except Exception as exc:  # noqa: BLE001 - 读档失败不该让界面崩掉
+            log.exception("解析存档时出现未预期的异常")
             return self._failure(ERROR_PARSE_FAIL, f"{type(exc).__name__}: {exc}")
 
         self._signature = signature
         self._last = view
+        self._last_error = None
+        meta = view.get("meta") or {}
+        log.info(
+            "已解析 · %s · %d 个 Boss · 来源=%s · %.0f ms · %s",
+            location.save_path.name,
+            len(view.get("bosses") or []),
+            meta.get("source"),
+            (time.monotonic() - started) * 1000,
+            location.save_path.parent,
+        )
         return view
 
     def _candidate_keys(self, location: Location) -> list[bytes]:
@@ -177,10 +201,12 @@ class Service:
             add(key)
 
         if not keys:
+            log.warning("没有可用密钥：既没指定 PBZ.exe，缓存里也没有")
             raise ServiceError(
                 ERROR_NEED_EXE,
                 "这个存档需要一个密钥。请选择游戏的 PBZ.exe（每台机器只需一次）。",
             )
+        log.debug("候选密钥 %d 个", len(keys))
         return keys
 
     def _try_parse(self, raw: bytes, keys: list[bytes]) -> tuple[dict, bytes]:
@@ -205,6 +231,7 @@ class Service:
             fallback = self._newest_snapshot(location.save_dir) if is_main else None
             if fallback is None:
                 raise
+            log.warning("主存档解不开，降级读快照 %s", fallback.name)
             records, key = self._try_parse(savefile.read_bytes(fallback), keys)
             self._key = key
             view = stats.build_view(records, self._mapping, self._meta(location, fallback))
@@ -237,6 +264,12 @@ class Service:
         }
 
     def _failure(self, code: str, message: str) -> dict:
+        # 失败会持续到下次成功，所以只在错误码变化时记一行，避免轮询把日志冲满
+        if code != self._last_error:
+            self._last_error = code
+            log.warning("读取失败 · %s · %s", code, message)
+        else:
+            log.debug("读取仍在失败 · %s · %s", code, message)
         payload = dict(self._last) if self._last else {"ok": False, "meta": {}, "cycle": None,
                                                        "totals": None, "bosses": []}
         payload["ok"] = False

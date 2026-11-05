@@ -15,6 +15,9 @@ import urllib.error
 import urllib.request
 
 from . import __version__
+from . import logs
+
+log = logs.get("update")
 
 REPO = "jackpoi/pbz-info"
 RELEASES_PAGE = f"https://github.com/{REPO}/releases"
@@ -71,6 +74,7 @@ def check(*, fetch=None, timeout: float = TIMEOUT) -> dict:
         release = fetcher(timeout=timeout)
     except urllib.error.HTTPError as exc:
         code = "RATE_LIMIT" if exc.code == 403 else "HTTP"
+        log.warning("检查更新失败 · HTTP %s · %s", exc.code, "限流" if code == "RATE_LIMIT" else "状态码异常")
         result = {
             "ok": False,
             "current": __version__,
@@ -79,6 +83,7 @@ def check(*, fetch=None, timeout: float = TIMEOUT) -> dict:
         _cache = (now, result)
         return dict(result)
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        log.warning("检查更新失败 · 连不上 GitHub · %s", exc)
         result = {
             "ok": False,
             "current": __version__,
@@ -87,6 +92,7 @@ def check(*, fetch=None, timeout: float = TIMEOUT) -> dict:
         _cache = (now, result)
         return dict(result)
     except ValueError as exc:  # JSON 解析失败
+        log.warning("检查更新失败 · 返回内容无法解析 · %s", exc)
         result = {
             "ok": False,
             "current": __version__,
@@ -107,6 +113,12 @@ def check(*, fetch=None, timeout: float = TIMEOUT) -> dict:
         "url": release.get("html_url") or RELEASES_PAGE,
         "publishedAt": (release.get("published_at") or "")[:10],
     }
+    log.info(
+        "检查更新 · 本地 %s · 发布页 %s · %s",
+        __version__,
+        tag,
+        "有更新" if result["hasUpdate"] else "无需更新",
+    )
     _cache = (now, result)
     return dict(result)
 

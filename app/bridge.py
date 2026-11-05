@@ -9,12 +9,15 @@ from __future__ import annotations
 import os
 import sys
 import threading
+import time
 from pathlib import Path
 
 from . import __version__
 from . import config as config_mod
-from . import discovery, service as service_mod
+from . import discovery, logs, service as service_mod
 from . import update as update_mod
+
+log = logs.get("bridge")
 
 
 def _open_url(url: str) -> bool:
@@ -48,12 +51,22 @@ class Bridge:
     # ------------------------------------------------------------------ 数据
 
     def get_state(self, force: bool = False) -> dict:
+        if not log.isEnabledFor(10):  # DEBUG 没开时不做计时，省掉每秒两次 clock 调用
+            with self._lock:
+                return self._service.refresh(
+                    save_dir=self._save_dir,
+                    save_path=self._save_path,
+                    force=bool(force),
+                )
+        started = time.monotonic()
         with self._lock:
-            return self._service.refresh(
+            state = self._service.refresh(
                 save_dir=self._save_dir,
                 save_path=self._save_path,
                 force=bool(force),
             )
+        log.debug("get_state(force=%s) · %d 个 Boss · %.1f ms", force, len(state.get("bosses") or []), (time.monotonic() - started) * 1000)
+        return state
 
     def refresh(self) -> dict:
         return self.get_state(True)
@@ -84,10 +97,12 @@ class Bridge:
     def _apply_save_path(self, path: Path) -> dict:
         """用户明确选了一个 .sav：就读这个文件，不替换成同目录的主存档。"""
         if not path.is_file():
+            log.warning("切换存档失败：文件不存在 %s", path)
             return {
                 "ok": False,
                 "error": {"code": service_mod.ERROR_BAD_DIR, "message": f"文件不存在：{path}"},
             }
+        log.info("切换到文件 %s", path)
         with self._lock:
             self._save_path = path
             self._save_dir = path.parent
@@ -99,6 +114,7 @@ class Bridge:
     def _apply_save_dir(self, directory: Path) -> dict:
         main = directory / service_mod.MAIN_SAVE
         if not main.is_file():
+            log.warning("切换存档失败：%s 里没有 %s", directory, service_mod.MAIN_SAVE)
             return {
                 "ok": False,
                 "error": {
@@ -106,6 +122,7 @@ class Bridge:
                     "message": f"{directory} 里没有 {service_mod.MAIN_SAVE}",
                 },
             }
+        log.info("切换到目录 %s", directory)
         with self._lock:
             self._save_dir = directory
             self._save_path = None
@@ -128,7 +145,9 @@ class Bridge:
     def set_exe(self, path: str) -> dict:
         exe = Path(path)
         if not exe.is_file():
+            log.warning("指定 PBZ.exe 失败：文件不存在 %s", path)
             return {"ok": False, "error": {"code": service_mod.ERROR_NEED_EXE, "message": "文件不存在"}}
+        log.info("指定 PBZ.exe · %s", exe)
         with self._lock:
             self._service.set_exe(exe)
             self._config["exePath"] = str(exe)
@@ -192,6 +211,25 @@ class Bridge:
             return {"ok": False}
         if sys.platform == "win32":
             os.startfile(str(target))  # noqa: S606
+        return {"ok": True}
+
+    def open_log_dir(self) -> dict:
+        """关于弹窗里的「打开日志目录」。目录不存在时先建出来。"""
+        target = logs.log_dir()
+        try:
+            target.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            log.warning("日志目录不可用：%s", target, exc_info=True)
+            return {"ok": False}
+        if sys.platform == "win32":
+            os.startfile(str(target))  # noqa: S606
+        return {"ok": True, "path": str(target)}
+
+    def log_frontend(self, level: str, message: str) -> dict:
+        """前端错误回传：白屏、未捕获的 Promise、Vue 渲染错误都从这里进日志。"""
+        text = str(message)[:2000]
+        name = level if level in {"debug", "info", "warning", "error"} else "warning"
+        getattr(log, name)("前端 · %s", text)
         return {"ok": True}
 
     def get_config(self) -> dict:
@@ -260,4 +298,5 @@ class Bridge:
         try:
             config_mod.save(self._config, self._config_path)
         except OSError:
-            pass
+            # 以前这里是静默 pass，"窗口尺寸/存档路径记不住"完全无从查起
+            log.warning("配置写不进去：%s", self._config_path, exc_info=True)

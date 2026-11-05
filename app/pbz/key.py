@@ -11,6 +11,10 @@ import json
 import os
 from pathlib import Path
 
+from .. import logs
+
+log = logs.get("key")
+
 #: PBZ.exe 中密钥材料的定位锚点（UTF-16LE）
 ANCHOR = "sealed but block is PLAINTEXT".encode("utf-16le")
 
@@ -67,9 +71,17 @@ def load_key(exe: Path, cache: Path | None = None, *, force: bool = False) -> by
     if cache is not None and not force:
         for entry in _entries(Path(cache)):
             if entry.get("fingerprint") == fingerprint:
+                log.debug("命中密钥缓存 · %s", exe.name)
                 return bytes.fromhex(entry["key"])
 
     key = derive_key(exe)
+    # 只记指纹（exe 大小/mtime）和来源，绝不记密钥本身
+    log.info(
+        "密钥派生成功 · %s · size=%s · mtime=%s",
+        exe,
+        fingerprint.get("size"),
+        fingerprint.get("mtime_ns"),
+    )
 
     if cache is not None:
         _remember(Path(cache), fingerprint, str(exe), key)

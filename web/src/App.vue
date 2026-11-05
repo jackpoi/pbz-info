@@ -64,6 +64,8 @@ async function tick(force = false) {
   try {
     apply(await bridge.get_state(force))
   } catch (err) {
+    // 桥本身出错（不只是"读档失败"）：以前只显示错误码，日志里什么都看不到
+    report(`get_state 失败 · ${describe(err)}`)
     error.value = { code: 'BRIDGE', message: String(err) }
   }
 }
@@ -143,6 +145,13 @@ async function openReleases() {
 
 async function openRepo() {
   await openExternal('https://github.com/jackpoi/pbz-info')
+}
+
+async function openLogs() {
+  const bridge = api()
+  if (bridge?.open_log_dir) {
+    await bridge.open_log_dir()
+  }
 }
 
 async function openExternal(url) {
@@ -237,15 +246,39 @@ async function loadViewPrefs() {
   } catch { /* 首次运行没有配置 */ }
 }
 
+/* ---------------------------------------------------------------- 前端错误 */
+
+// 白屏、未捕获的 Promise、Vue 渲染错误都回传到后端日志：打包后没有控制台，
+// 否则这些错误在用户机器上完全不可见。
+function report(message, level = 'error') {
+  const bridge = api()
+  if (!bridge?.log_frontend) return
+  try {
+    bridge.log_frontend(level, String(message))
+  } catch { /* 记日志失败不能再制造错误 */ }
+}
+
+function describe(value) {
+  if (value instanceof Error) return `${value.name}: ${value.message}\n${value.stack || ''}`
+  if (typeof value === 'string') return value
+  try { return JSON.stringify(value) } catch { return String(value) }
+}
+
 /* ---------------------------------------------------------------- 生命周期 */
 
 let dataTimer = null
 let clockTimer = null
+let onWindowError = null
+let onRejection = null
 
 onMounted(() => {
   hasBridge.value = Boolean(api())
   clockTimer = setInterval(() => { now.value = Date.now() }, 500)
   window.addEventListener('keydown', onKeydown)
+  onWindowError = (event) => report(`window.onerror · ${event.message} · ${event.filename}:${event.lineno}`)
+  onRejection = (event) => report(`unhandledrejection · ${describe(event.reason)}`)
+  window.addEventListener('error', onWindowError)
+  window.addEventListener('unhandledrejection', onRejection)
   if (hasBridge.value) {
     loadViewPrefs()
     tick()
@@ -273,6 +306,8 @@ onBeforeUnmount(() => {
   clearInterval(clockTimer)
   window.removeEventListener('pywebviewready', onReady)
   window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('error', onWindowError)
+  window.removeEventListener('unhandledrejection', onRejection)
 })
 </script>
 
@@ -496,6 +531,12 @@ onBeforeUnmount(() => {
             </dd>
           </div>
           <div class="kvrow"><dt>许可</dt><dd>MIT</dd></div>
+          <div class="kvrow">
+            <dt>日志</dt>
+            <dd class="mono">
+              <button class="link about-link" type="button" @click="openLogs">打开日志目录</button>
+            </dd>
+          </div>
         </dl>
 
         <div class="update-row">

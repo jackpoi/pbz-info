@@ -215,6 +215,11 @@ async function main() {
         inView,
         repoLink: repoLink ? { tag: repoLink.tagName, text: repoLink.textContent.trim() } : null,
         rows: [...document.querySelectorAll('.about-list .kvrow dt')].map((el) => el.textContent.trim()),
+        logButton: (() => {
+          const el = [...document.querySelectorAll('.about-list .kvrow dd .link')]
+            .find((n) => n.textContent.includes('打开日志目录'));
+          return el ? el.tagName : null;
+        })(),
         hasCheckButton: [...document.querySelectorAll('.modal .btn')].some((el) => el.textContent.includes('检查更新')),
       };
     })()`,
@@ -302,6 +307,8 @@ async function main() {
   if (about.repoLink?.tag !== "BUTTON") problems.push("项目地址不是可点击的按钮");
   if (!about.repoLink?.text.includes("github.com/jackpoi/pbz-info")) problems.push("项目地址文案不对");
   if (about.rows.includes("联网") || about.rows.includes("存档")) problems.push("联网/存档两行应当已删除");
+  if (!about.rows.includes("日志")) problems.push("关于弹窗里没有「日志」一行");
+  if (about.logButton !== "BUTTON") problems.push("「打开日志目录」不是可点击按钮");
   if (!aboutClosed) problems.push("Esc 没关掉关于弹窗");
   if (!updateText.msg.includes('v9.9.9')) problems.push(`检查更新没显示发布页版本号：${updateText.msg}`);
   if (!updateText.canUpdate) problems.push("有新版本时没有「可更新」提示");
