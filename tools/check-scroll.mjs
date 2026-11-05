@@ -128,8 +128,27 @@ async function main() {
       const wrap = document.querySelector('.tablewrap');
       const ledger = document.querySelector('.ledger').getBoundingClientRect();
       const rail = document.querySelector('.railcard').getBoundingClientRect();
+      const badges = [...document.querySelectorAll('tbody .badge-icon')].map((badge) => {
+        const cell = badge.closest('td').getBoundingClientRect();
+        const box = badge.getBoundingClientRect();
+        return {
+          key: badge.dataset.badge,
+          title: badge.querySelector('title')?.textContent ?? '',
+          label: badge.getAttribute('aria-label') ?? '',
+          inside: box.left >= cell.left - 1 && box.right <= cell.right + 1,
+          withText: badge.closest('td').textContent.includes('已击杀'),
+          width: Math.round(box.width),
+          height: Math.round(box.height),
+        };
+      });
+      const diffs = [...document.querySelectorAll('tbody td.diff')].map((td) => ({
+        text: td.textContent.trim(),
+        clipped: td.scrollWidth > td.clientWidth + 1,
+      }));
       return {
         rows: document.querySelectorAll('tbody tr').length,
+        badges,
+        diffs,
         scrollHeight: wrap.scrollHeight,
         clientHeight: wrap.clientHeight,
         scrollTop: wrap.scrollTop,
@@ -174,6 +193,17 @@ async function main() {
 
   await shot(client, join(outDir, `long-${ROWS}-bottom.png`));
 
+  // 按出现顺序升序，把"一命通关"样本行（idx 1）放到第二行，便于肉眼核对徽章
+  await evaluate(
+    client,
+    `(() => {
+      document.querySelector('thead th').click();
+      document.querySelector('.tablewrap').scrollTop = 0;
+    })()`,
+  );
+  await sleep(120);
+  await shot(client, join(outDir, `badge-${ROWS}-${WIDTH}.png`));
+
   console.log(JSON.stringify({ rows: ROWS, info, afterScroll, atBottom }, null, 2));
 
   const problems = [];
@@ -185,6 +215,17 @@ async function main() {
   if (info.pageScrolls) problems.push("整页出现了滚动条");
   if (info.ledgerBottom > info.viewport.h + 1) problems.push("表格面板超出窗口");
   if (info.railBottom > info.viewport.h + 1) problems.push("左侧卡超出窗口");
+  if (!info.badges.length) problems.push("没有渲染一命通关徽章");
+  if (info.badges.some((badge) => badge.key !== "firstTry")) problems.push("徽章标记不是 firstTry");
+  if (info.badges.some((badge) => badge.title !== "一命通关" || badge.label !== "一命通关")) {
+    problems.push("徽章提示不是“一命通关”");
+  }
+  if (info.badges.some((badge) => !badge.withText)) problems.push("徽章没有跟在“已击杀”之后");
+  if (info.badges.some((badge) => !badge.inside)) problems.push("徽章超出所在单元格");
+  if (info.diffs.length !== ROWS) problems.push("难度列缺失");
+  if (info.diffs.some((diff) => !diff.text || diff.text === "—")) problems.push("难度列有空值");
+  if (info.diffs.some((diff) => diff.clipped)) problems.push("难度列文字被裁剪");
+  if (new Set(info.diffs.map((diff) => diff.text)).size < 2) problems.push("难度列没有体现不同难度");
 
   console.log(JSON.stringify({ rows: ROWS, viewport: [WIDTH, HEIGHT], problems }, null, 2));
 

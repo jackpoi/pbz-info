@@ -69,11 +69,32 @@ def _int(value: Any) -> int:
         return 0
 
 
+def _advanced_difficulty(key: Any) -> int | None:
+    """账号级 Records 的键就是难度，例如 "3"。"""
+    text = str(key)
+    return int(text) if text.isdigit() else None
+
+
+def _slot_difficulty(key: Any, cycle: int) -> int | None:
+    """槽位 Records 的键是 "<cycle>_<difficulty>"，例如 "0_3"。"""
+    parts = str(key).split("_", 1)
+    if len(parts) != 2 or parts[0] != str(cycle) or not parts[1].isdigit():
+        return None
+    return int(parts[1])
+
+
+def is_first_try(attempt: int, kill: int) -> bool:
+    """一命通关：只进入战斗一次就击杀。
+
+    AttemptCount 是"进入战斗"的次数，因此 attempt == 1 意味着没有任何失败尝试。
+    """
+    return attempt == 1 and kill > 0
+
+
 def _collect_bosses(
     records: dict[str, Any],
     slot: str,
     cycle: int,
-    difficulty: int,
     mapping: Mapping,
 ) -> list[dict]:
     advanced_bosses = ((records.get("__Advanced__") or {}).get("BossRecord") or {})
@@ -89,20 +110,39 @@ def _collect_bosses(
         if boss_id not in order:
             order.append(boss_id)
 
-    diff_key = str(difficulty)
-    slot_key = f"{cycle}_{difficulty}"
-
     out: list[dict] = []
     for idx, boss_id in enumerate(order):
-        account_record = _records_of(advanced_bosses, boss_id).get(diff_key)
-        if not isinstance(account_record, dict):
-            account_record = None
-        elif "Cycle" in account_record and _int(account_record.get("Cycle")) != cycle:
-            account_record = None  # 账号级记的是别的周目，退回槽位
+        # 同一个 Boss 只会在击杀时的那个难度留下记录；难度不能按当前
+        # DifficultModeByte 过滤，否则切换难度后旧难度的战绩会消失。
+        by_difficulty: dict[int, dict] = {}
 
-        record = account_record if account_record is not None else _records_of(slot_bosses, boss_id).get(slot_key)
-        if not isinstance(record, dict):
+        # 槽位先放，账号级同难度覆盖（账号级可能比槽位新 1 次事件）
+        for key, record in _records_of(slot_bosses, boss_id).items():
+            if not isinstance(record, dict):
+                continue
+            diff = _slot_difficulty(key, cycle)
+            if diff is not None:
+                by_difficulty[diff] = record
+
+        for key, record in _records_of(advanced_bosses, boss_id).items():
+            if not isinstance(record, dict):
+                continue
+            diff = _advanced_difficulty(key)
+            if diff is None:
+                continue
+            if "Cycle" in record and _int(record.get("Cycle")) != cycle:
+                continue  # 账号级记的是别的周目，退回槽位
+            by_difficulty[diff] = record
+
+        if not by_difficulty:
             continue
+
+        # 防御性选择：理论上一个周目只有一条记录；若有异常的多条，
+        # 优先有击杀的，其次难度更高者，保证结果稳定。
+        difficulty, record = max(
+            by_difficulty.items(),
+            key=lambda item: (_int(item[1].get("KillCount")) > 0, item[0]),
+        )
 
         attempt = _int(record.get("AttemptCount"))
         kill = _int(record.get("KillCount"))
@@ -117,6 +157,9 @@ def _collect_bosses(
                 "deaths": max(0, attempt - kill),
                 # 0 表示"没有可用的击杀时长"，界面显示破折号而不是 0:00.000
                 "bestMs": best if best > 0 else None,
+                "firstTry": is_first_try(attempt, kill),
+                "difficulty": difficulty,
+                "difficultyName": mapping.difficulty_name(difficulty),
             }
         )
     return out
@@ -136,7 +179,7 @@ def build_view(records: dict[str, Any], mapping: Mapping, meta: dict | None = No
     died_times = _int(death_meta.get("DiedTimes"))
     cycle_start_died = _int(game.get("CycleStartDiedTimes"))
 
-    bosses = _collect_bosses(records, slot, cycle, difficulty, mapping)
+    bosses = _collect_bosses(records, slot, cycle, mapping)
     boss_deaths = sum(b["deaths"] for b in bosses)
     killed = sum(1 for b in bosses if b["kill"] > 0)
 

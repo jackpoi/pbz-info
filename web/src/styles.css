@@ -205,26 +205,41 @@ thead th:hover { color: var(--muted); }
 thead th.num { text-align: right; }
 thead th .arrow { color: var(--muted); margin-left: 4px; }
 /* "死亡"表头对齐到数字轨道末端，而不是长度条末端 */
-th.col-death > .hlabel { display: block; margin-right: 212px; text-align: right; }
+th.col-death > .hlabel { display: block; margin-right: 152px; text-align: right; }
 tbody td { height: 44px; border-bottom: 1px solid var(--rule); vertical-align: middle; padding: 0; }
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr:hover td { background: #17140f; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 td.state { color: var(--muted); font-size: 13px; }
 th.col-state, td.state { padding-left: 20px; }
+th.col-diff, td.diff { padding-left: 12px; }
+td.diff {
+  color: var(--muted); font-size: 12px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 /* 面板改成左右 0 内边距之后，首尾列自己补回来 */
 .ledger th:first-child, .ledger td:first-child { padding-left: 20px; }
 .ledger th:last-child, .ledger td:last-child { padding-right: 20px; }
 
 .boss { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-.boss .name { font-weight: 500; white-space: nowrap; }
+.boss .name {
+  font-weight: 500; white-space: nowrap;
+  /* 最小窗口下空间不足时省略名字，而不是溢到下一列 */
+  flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+}
 .boss .id {
   font-family: var(--mono); font-size: 12px; color: var(--faint);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .boss.is-unknown .id { color: var(--muted); font-size: 13px; }
+/* 唯一一枚战绩徽章：放在"击杀"列的"已击杀"之后；当前是占位图形，替换时不动判定与布局 */
+.badge-icon {
+  width: 15px; height: 15px;
+  margin-left: 6px; vertical-align: -2px;
+  color: var(--muted);
+}
 
-.death { display: grid; grid-template-columns: 1fr 200px; gap: 12px; align-items: center; }
+.death { display: grid; grid-template-columns: 1fr 140px; gap: 12px; align-items: center; }
 .bar { height: 6px; }
 .bar i { display: block; height: 100%; background: var(--fill); border-radius: 2px; transition: width 320ms ease; }
 .death .v { text-align: right; transition: color 300ms ease; }
@@ -268,7 +283,10 @@ tr.bump .death .v { color: var(--accent); }
   thead th { position: static; }
   table { table-layout: auto; min-width: 560px; }
   .bar { width: 56px; }
-  thead th:nth-child(3), tbody td:nth-child(3) { display: none; }
+  /* 窄屏只留 Boss / 死亡 / 难度；击杀状态与用时让位 */
+  thead th:nth-child(3), tbody td:nth-child(3),
+  thead th:nth-child(5), tbody td:nth-child(5) { display: none; }
+  .ledger th:nth-child(4), .ledger td:nth-child(4) { padding-right: 20px; }
   .death { grid-template-columns: 1fr 56px; }
   th.col-death > .hlabel { margin-right: 68px; }
 }

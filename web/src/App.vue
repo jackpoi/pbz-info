@@ -155,6 +155,12 @@ function setSort(key) {
   api()?.set_view?.(sortKey.value, sortDir.value)
 }
 
+function diffLabel(row) {
+  if (row.difficultyName) return row.difficultyName
+  if (row.difficulty != null) return `难度 ${row.difficulty}`
+  return '—'
+}
+
 async function loadViewPrefs() {
   const bridge = api()
   if (!bridge?.get_config) return
@@ -280,7 +286,7 @@ onBeforeUnmount(() => {
           <header><h2>本周目</h2></header>
           <dl style="margin: 0">
             <div class="kvrow"><dt>周目</dt><dd>{{ cycle ? `第 ${cycle.index} 周目` : '–' }}</dd></div>
-            <div class="kvrow"><dt>难度</dt><dd :title="`DifficultModeByte = ${cycle?.difficulty}`">{{ diffText }}</dd></div>
+            <div class="kvrow"><dt>当前难度</dt><dd :title="`DifficultModeByte = ${cycle?.difficulty}`">{{ diffText }}</dd></div>
             <div class="kvrow"><dt>通关状态</dt><dd>{{ cycle ? (cycle.finished ? '已通关' : '未通关') : '–' }}</dd></div>
             <div class="kvrow"><dt>当前关卡</dt><dd class="mono">{{ cycle?.level || '–' }}</dd></div>
             <div class="kvrow"><dt>存档点</dt><dd class="mono">{{ cycle?.bell || '–' }}</dd></div>
@@ -324,9 +330,10 @@ onBeforeUnmount(() => {
           <table>
             <colgroup>
               <col />
-              <col style="width: 264px" />
+              <col style="width: 200px" />
               <col style="width: 88px" />
-              <col style="width: 116px" />
+              <col style="width: 80px" />
+              <col style="width: 90px" />
             </colgroup>
             <thead>
               <tr>
@@ -338,6 +345,14 @@ onBeforeUnmount(() => {
                 </th>
                 <th class="col-state" data-sort="kill" @click="setSort('kill')">
                   击杀<span v-if="sortKey === 'kill'" class="arrow">{{ sortDir > 0 ? '↑' : '↓' }}</span>
+                </th>
+                <th
+                  class="col-diff"
+                  data-sort="difficulty"
+                  title="该条战绩发生时的难度，击杀后即为击杀难度"
+                  @click="setSort('difficulty')"
+                >
+                  难度<span v-if="sortKey === 'difficulty'" class="arrow">{{ sortDir > 0 ? '↑' : '↓' }}</span>
                 </th>
                 <th class="num" data-sort="bestMs" @click="setSort('bestMs')">
                   击杀用时<span v-if="sortKey === 'bestMs'" class="arrow">{{ sortDir > 0 ? '↑' : '↓' }}</span>
@@ -367,14 +382,34 @@ onBeforeUnmount(() => {
                     </span>
                   </div>
                 </td>
-                <td class="state">{{ row.kill > 0 ? '已击杀' : '' }}</td>
+                <td class="state">
+                  <template v-if="row.kill > 0">已击杀</template>
+                  <svg
+                    v-if="row.firstTry"
+                    class="badge-icon"
+                    data-badge="firstTry"
+                    viewBox="0 0 16 16"
+                    role="img"
+                    aria-label="一命通关"
+                  >
+                    <title>一命通关</title>
+                    <path
+                      d="M8 1.7l1.9 4.2 4.6.5-3.4 3.1.9 4.5L8 11.9 4 14l.9-4.5L1.5 6.4l4.6-.5L8 1.7Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </td>
+                <td
+                  class="diff"
+                  :title="row.kill > 0 ? '击杀这个 Boss 时使用的难度' : '遭遇这个 Boss 时使用的难度'"
+                >{{ diffLabel(row) }}</td>
                 <td class="num">
                   <span v-if="row.bestMs != null">{{ duration(row.bestMs) }}</span>
                   <span v-else class="dash">—</span>
                 </td>
               </tr>
               <tr v-if="!rows.length">
-                <td colspan="4" class="empty">本周目还没有 Boss 记录</td>
+                <td colspan="5" class="empty">本周目还没有 Boss 记录</td>
               </tr>
             </tbody>
           </table>

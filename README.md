@@ -2,9 +2,9 @@
 
 **简体中文** · [English](README.en.md)
 
-> 读取《影之刃零》的本地存档，按**当前周目**统计每个 Boss 的死亡数、击杀状态与最快击杀用时，以及本周目时长和总死亡。
+> 读取《影之刃零》的本地存档，按**当前周目**统计每个 Boss 的死亡数、击杀状态、击杀难度与最快击杀用时，以及本周目时长和总死亡。
 >
-> A read-only dashboard for *Phantom Blade Zero* saves: per-boss deaths, kill status and best clear time, plus playtime and total deaths for the current cycle.
+> A read-only dashboard for *Phantom Blade Zero* saves: per-boss deaths, kill status, kill difficulty and best clear time, plus playtime and total deaths for the current cycle.
 
 [![Release](https://img.shields.io/github/v/release/jackpoi/pbz-info?style=flat-square)](https://github.com/jackpoi/pbz-info/releases/latest)
 [![CI](https://github.com/jackpoi/pbz-info/actions/workflows/release.yml/badge.svg)](https://github.com/jackpoi/pbz-info/actions/workflows/release.yml)
@@ -21,8 +21,9 @@
 
 | 特性 | 说明 |
 |---|---|
-| 当前周目口径 | 只统计当前周目 + 当前难度，跨周目/难度不合并 |
-| Boss 战绩 | 每个 Boss 的死亡数、击杀状态、最快击杀用时 |
+| 当前周目口径 | 只统计当前周目；Boss 列表跨难度读取，同一 Boss 不会跨难度重复 |
+| Boss 战绩 | 每个 Boss 的死亡数、击杀状态、击杀难度、最快击杀用时 |
+| 一命通关徽章 | 第一次尝试就击杀的 Boss 会在「已击杀」后显示图标 |
 | 生涯概览 | 本周目时长、总死亡、已击败 Boss 数 |
 | 自动刷新 | 存档变化后自动重读；读取失败时保留上一次结果 |
 | 手动指定 | 找不到游戏时，直接选 `.sav` 文件或包含 `PBZSaveGame.sav` 的目录 |

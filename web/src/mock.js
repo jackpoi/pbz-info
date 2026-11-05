@@ -32,16 +32,16 @@ export const MOCK = {
     worst: { id: 'BP_Monster_MoTian_LongZhu_01', name: '金面具黑衣人', deaths: 10 },
   },
   bosses: [
-    { id: 'BP_Monster_ZuoShang', name: '组织冥主：左殇', idx: 0, attempt: 2, kill: 1, deaths: 1, bestMs: 180000 },
-    { id: 'BP_Monster_HookMan_HorseCartCombat', name: '猎杀者：追命（序章版）', idx: 1, attempt: 1, kill: 1, deaths: 0, bestMs: 45000 },
-    { id: 'BP_Monster_YuCong_FirstTime', name: '三张脸的诡异魔偶', idx: 2, attempt: 1, kill: 0, deaths: 1, bestMs: null },
-    { id: 'BP_Monster_MobMan_Elite_Sword', name: '痴狂暴徒：残钢', idx: 3, attempt: 3, kill: 1, deaths: 2, bestMs: 120000 },
-    { id: 'BP_Monster_PengMeng_Axe', name: '斧老大：彭猛', idx: 4, attempt: 3, kill: 1, deaths: 2, bestMs: 150000 },
-    { id: 'BP_Monster_AHua_GuiTouDao', name: '新娘阿花', idx: 5, attempt: 5, kill: 1, deaths: 4, bestMs: 200000 },
-    { id: 'BP_Monster_HookMan', name: '猎杀者：追命', idx: 6, attempt: 2, kill: 1, deaths: 1, bestMs: 100000 },
-    { id: 'BP_Monster_HookMan_P2', name: '追命：六绝凶镰', idx: 7, attempt: 4, kill: 1, deaths: 3, bestMs: 160000 },
-    { id: 'BP_Monster_MoTian_LongZhu_01', name: '金面具黑衣人', idx: 8, attempt: 11, kill: 1, deaths: 10, bestMs: 300000 },
-    { id: 'BP_Monster_HuaQianXIao', name: '剑痴：花千笑', idx: 9, attempt: 6, kill: 0, deaths: 6, bestMs: null },
+    { id: 'BP_Monster_ZuoShang', name: '组织冥主：左殇', idx: 0, attempt: 2, kill: 1, deaths: 1, bestMs: 180000, firstTry: false, difficulty: 3, difficultyName: '逆天者' },
+    { id: 'BP_Monster_HookMan_HorseCartCombat', name: '猎杀者：追命（序章版）', idx: 1, attempt: 1, kill: 1, deaths: 0, bestMs: 45000, firstTry: true, difficulty: 3, difficultyName: '逆天者' },
+    { id: 'BP_Monster_YuCong_FirstTime', name: '三张脸的诡异魔偶', idx: 2, attempt: 1, kill: 0, deaths: 1, bestMs: null, firstTry: false, difficulty: 3, difficultyName: '逆天者' },
+    { id: 'BP_Monster_MobMan_Elite_Sword', name: '痴狂暴徒：残钢', idx: 3, attempt: 3, kill: 1, deaths: 2, bestMs: 120000, firstTry: false, difficulty: 2, difficultyName: '破局者' },
+    { id: 'BP_Monster_PengMeng_Axe', name: '斧老大：彭猛', idx: 4, attempt: 3, kill: 1, deaths: 2, bestMs: 150000, firstTry: false, difficulty: 3, difficultyName: '逆天者' },
+    { id: 'BP_Monster_AHua_GuiTouDao', name: '新娘阿花', idx: 5, attempt: 5, kill: 1, deaths: 4, bestMs: 200000, firstTry: false, difficulty: 3, difficultyName: '逆天者' },
+    { id: 'BP_Monster_HookMan', name: '猎杀者：追命', idx: 6, attempt: 2, kill: 1, deaths: 1, bestMs: 100000, firstTry: false, difficulty: 3, difficultyName: '逆天者' },
+    { id: 'BP_Monster_HookMan_P2', name: '追命：六绝凶镰', idx: 7, attempt: 4, kill: 1, deaths: 3, bestMs: 160000, firstTry: false, difficulty: 4, difficultyName: '六十六天' },
+    { id: 'BP_Monster_MoTian_LongZhu_01', name: '金面具黑衣人', idx: 8, attempt: 11, kill: 1, deaths: 10, bestMs: 300000, firstTry: false, difficulty: 3, difficultyName: '逆天者' },
+    { id: 'BP_Monster_HuaQianXIao', name: '剑痴：花千笑', idx: 9, attempt: 6, kill: 0, deaths: 6, bestMs: null, firstTry: false, difficulty: 3, difficultyName: '逆天者' },
   ],
 }
 
@@ -55,14 +55,18 @@ if (Number.isFinite(wanted) && wanted > MOCK.bosses.length) {
   const extra = []
   for (let i = base.length; i < wanted; i += 1) {
     const source = base[i % base.length]
+    const attempt = (i * 5) % 24 + 1
+    const kill = i % 3 === 0 ? 0 : 1
     extra.push({
       ...source,
       id: `${source.id}_${i}`,
       name: `${source.name} ${i + 1}`,
       idx: i,
       deaths: (i * 5) % 24,
-      attempt: (i * 5) % 24 + 1,
-      kill: i % 3 === 0 ? 0 : 1,
+      attempt,
+      kill,
+      // 铺开后的数据按 attempt/kill 重新判定，避免出现"死 10 次却一命通关"
+      firstTry: attempt === 1 && kill > 0,
     })
   }
   MOCK.bosses = [...base, ...extra]

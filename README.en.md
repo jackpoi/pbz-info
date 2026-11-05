@@ -2,9 +2,9 @@
 
 **English** · [简体中文](README.md)
 
-> A read-only dashboard for *Phantom Blade Zero* saves: per-boss deaths, kill status and best clear time for the **current cycle**, plus playtime and total deaths.
+> A read-only dashboard for *Phantom Blade Zero* saves: per-boss deaths, kill status, kill difficulty and best clear time for the **current cycle**, plus playtime and total deaths.
 >
-> 读取《影之刃零》的本地存档，按**当前周目**统计每个 Boss 的死亡数、击杀状态与最快击杀用时，以及本周目时长和总死亡。
+> 读取《影之刃零》的本地存档，按**当前周目**统计每个 Boss 的死亡数、击杀状态、击杀难度与最快击杀用时，以及本周目时长和总死亡。
 
 [![Release](https://img.shields.io/github/v/release/jackpoi/pbz-info?style=flat-square)](https://github.com/jackpoi/pbz-info/releases/latest)
 [![CI](https://github.com/jackpoi/pbz-info/actions/workflows/release.yml/badge.svg)](https://github.com/jackpoi/pbz-info/actions/workflows/release.yml)
@@ -21,8 +21,8 @@ The game does not need to be running. If no key is cached yet, select the game's
 
 | Feature | Description |
 |---|---|
-| Current-cycle scope | Only the current cycle and difficulty; cycles and difficulties are never merged |
-| Boss records | Deaths, kill status and best clear time for every boss |
+| Current-cycle scope | Current cycle only; the boss list spans difficulties, and a boss never repeats across them |
+| Boss records | Deaths, kill status, kill difficulty and best clear time for every boss |
 | Run overview | Cycle playtime, total deaths and bosses defeated |
 | Auto refresh | Re-reads after the save changes; keeps the last good snapshot if reading fails |
 | Manual selection | Choose a `.sav` file or a folder containing `PBZSaveGame.sav` when auto-detection fails |

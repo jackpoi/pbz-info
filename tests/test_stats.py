@@ -85,6 +85,75 @@ def test_boss_names_resolve(view):
     assert all(name for name in names.values())
 
 
+def test_first_try_badge(view):
+    """一命通关 = 只进入战斗一次且击杀；样本里只有追命（序章版）成立。"""
+    flags = {b["id"]: b["firstTry"] for b in view["bosses"]}
+    assert flags["BP_Monster_HookMan_HorseCartCombat"] is True
+    assert flags["BP_Monster_ZuoShang"] is False       # 2 次尝试
+    assert flags["BP_Monster_YuCong_FirstTime"] is False  # 未击杀
+    assert sum(flags.values()) == 1
+
+
+def test_first_try_badge_follows_counts(dec_records, mapping):
+    records = copy.deepcopy(dec_records)
+    record = records["__Advanced__"]["BossRecord"]["BP_Monster_ZuoShang"]["Records"]["3"]
+    record["AttemptCount"] = 1
+    record["KillCount"] = 1
+    boss = next(b for b in stats.build_view(records, mapping)["bosses"]
+                if b["id"] == "BP_Monster_ZuoShang")
+    assert boss["deaths"] == 0
+    assert boss["firstTry"] is True
+
+
+def test_boss_difficulty_is_record_key(view):
+    """难度来自 Records 的键，而不是当前的 DifficultModeByte。"""
+    for boss in view["bosses"]:
+        assert boss["difficulty"] == 3
+        assert boss["difficultyName"] == "逆天者"
+
+
+def test_boss_keeps_other_difficulty_record(dec_records, mapping):
+    """把某条战绩改到难度 2 后，当前难度 3 的列表里仍然要看得到它。"""
+    records = copy.deepcopy(dec_records)
+    entry = records["__Advanced__"]["BossRecord"]["BP_Monster_ZuoShang"]
+    entry["Records"]["2"] = entry["Records"].pop("3")
+    view = stats.build_view(records, mapping)
+    boss = next(b for b in view["bosses"] if b["id"] == "BP_Monster_ZuoShang")
+    assert (boss["difficulty"], boss["difficultyName"]) == (2, "破局者")
+    assert any(b["difficulty"] == 3 for b in view["bosses"])
+    assert len(view["bosses"]) == len(EXPECTED_BOSSES)
+
+
+def test_slot_record_difficulty_parsed(dec_records, mapping):
+    records = copy.deepcopy(dec_records)
+    records["__Advanced__"]["BossRecord"].pop("BP_Monster_ZuoShang")
+    records["AutoSave0"]["BossRecord"] = {
+        "BP_Monster_ZuoShang": {
+            "Records": {"0_2": {"AttemptCount": 3, "KillCount": 1, "BestTimeMs": 1000}}
+        }
+    }
+    view = stats.build_view(records, mapping)
+    boss = next(b for b in view["bosses"] if b["id"] == "BP_Monster_ZuoShang")
+    assert (boss["attempt"], boss["kill"], boss["deaths"], boss["bestMs"]) == (3, 1, 2, 1000)
+    assert (boss["difficulty"], boss["difficultyName"]) == (2, "破局者")
+
+
+def test_advanced_other_cycle_falls_back_to_slot(dec_records, mapping):
+    """账号级记录是别的周目时，用槽位里当前周目的记录，并保留其难度。"""
+    records = copy.deepcopy(dec_records)
+    records["AutoSave0"]["PBZGameSystem"]["CycleCount"] = 1
+    records["AutoSave0"]["BossRecord"] = {
+        "BP_Monster_ZuoShang": {
+            "Records": {"1_2": {"AttemptCount": 1, "KillCount": 1, "BestTimeMs": 9000}}
+        }
+    }
+    view = stats.build_view(records, mapping)
+    assert [b["id"] for b in view["bosses"]] == ["BP_Monster_ZuoShang"]
+    boss = view["bosses"][0]
+    assert (boss["difficulty"], boss["difficultyName"]) == (2, "破局者")
+    assert (boss["attempt"], boss["kill"], boss["bestMs"]) == (1, 1, 9000)
+
+
 def test_boss_deaths_sum_matches_totals(view):
     assert sum(b["deaths"] for b in view["bosses"]) == view["totals"]["bossDeaths"]
     assert view["totals"]["bossDeaths"] < view["totals"]["deaths"]  # 差额是小怪/地形死亡
@@ -136,7 +205,9 @@ def test_unknown_difficulty_has_name_none(dec_records, mapping):
     records["AutoSave0"]["PBZGameSystem"]["DifficultModeByte"] = 9
     view = stats.build_view(records, mapping)
     assert view["cycle"]["difficultyName"] is None
-    assert view["bosses"] == []
+    # 当前难度未知不影响 Boss 列表：每条记录带着自己的难度
+    assert len(view["bosses"]) == len(EXPECTED_BOSSES)
+    assert {b["difficulty"] for b in view["bosses"]} == {3}
 
 
 # ------------------------------------------------------------------ 槽位选择
