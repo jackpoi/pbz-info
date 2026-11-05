@@ -99,7 +99,7 @@ build/        PyInstaller spec 与打包资源
 
 ## 许可证
 
-[MIT](LICENSE)。`native/pbz_codec.dll` 及其上游组件按各自许可分发，见 [THIRD-PARTY.md](THIRD-PARTY.md) 与 [LICENSES/](LICENSES/)。
+[MIT](LICENSE)。`native/pbz_codec.dll` 及其上游组件按各自许可分发，见 [THIRD-PARTY.md](THIRD-PARTY.md)。
 
 ## 第三方
 

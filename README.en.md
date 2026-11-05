@@ -99,7 +99,7 @@ This app does not write save files, modify game files, or access the network.
 
 ## License
 
-[MIT](LICENSE). `native/pbz_codec.dll` and its upstream components remain under their own licenses; see [THIRD-PARTY.md](THIRD-PARTY.md) and [LICENSES/](LICENSES/).
+[MIT](LICENSE). `native/pbz_codec.dll` and its upstream components remain under their own licenses; see [THIRD-PARTY.md](THIRD-PARTY.md).
 
 ## Third-party
 
