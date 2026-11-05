@@ -52,8 +52,8 @@ powershell -ExecutionPolicy Bypass -File build.ps1
 ## 开发
 
 ```powershell
-python run.py                      # 启动窗口（需要先构建前端）
-python -m pytest tests -q          # 110 项回归测试（2 项需真实游戏资源，默认跳过）
+python run.py                      # 启动窗口
+python -m pytest tests -q          # 回归测试
 python tools\dump.py               # 打印当前存档归一化后的 JSON
 python tools\dump.py --save-dir "D:\...\Steam\<SteamID>"
 ```
@@ -96,7 +96,7 @@ build/        PyInstaller spec 与打包资源
 
 ## 只读保证
 
-不写存档、不改游戏文件。除你主动点击“检查更新”（只读一次 GitHub Releases 的 latest）外不联网。
+不写存档、不改游戏文件。
 
 ## 许可证
 

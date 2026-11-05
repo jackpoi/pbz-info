@@ -143,3 +143,54 @@ def test_list_accounts_without_steam_is_empty(env, monkeypatch):
 
     monkeypatch.setattr(discovery, "discover", boom)
     assert bridge_mod.Bridge.list_accounts(env[0]) == []
+
+
+# ------------------------------------------------------------------ 版本 / 外链
+
+def test_get_version_matches_module(env):
+    from app import __version__
+
+    info = env[0].get_version()
+    assert info["version"] == __version__
+    assert info["repo"] == "jackpoi/pbz-info"
+    assert info["releasesPage"].endswith("/releases")
+
+
+def test_open_url_rejects_foreign_links(env, monkeypatch):
+    """桥接层只放行本项目地址，不接受任意 URL（哪怕是 https）。"""
+    import app.bridge as bridge_module
+
+    opened = []
+    monkeypatch.setattr(bridge_module, "_open_url", lambda url: opened.append(url) or True)
+    bridge = env[0]
+
+    assert bridge.open_url("https://example.com")["ok"] is False
+    assert bridge.open_url("file:///C:/Windows/System32/calc.exe")["ok"] is False
+    assert bridge.open_url(None)["ok"] is False
+    assert opened == []
+
+
+def test_open_url_allows_project_links(env, monkeypatch):
+    import app.bridge as bridge_module
+
+    opened = []
+    monkeypatch.setattr(bridge_module, "_open_url", lambda url: opened.append(url) or True)
+    bridge = env[0]
+
+    assert bridge.open_url("https://github.com/jackpoi/pbz-info")["ok"] is True
+    assert bridge.open_url("https://github.com/jackpoi/pbz-info/releases/tag/v1.0.0")["ok"] is True
+    assert len(opened) == 2
+
+
+def test_check_update_never_raises(env, monkeypatch):
+    """检查更新失败也只是返回 {ok:false}，不能把界面打崩。"""
+    import app.update as update_module
+
+    def boom():
+        raise RuntimeError("network stack exploded")
+
+    monkeypatch.setattr(update_module, "check", boom)
+    result = env[0].check_update()
+    assert result["ok"] is False
+    assert result["error"]["code"] == "UNEXPECTED"
+    assert result["current"]

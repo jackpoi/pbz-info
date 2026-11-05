@@ -13,7 +13,7 @@
 
 ## Download
 
-Download `pbz-info.exe` from [Releases](https://github.com/jackpoi/pbz-info/releases/latest) and run it. It is a single Windows x64 executable; no Python installation is required.
+Download `pbz-info.exe` from [Releases](https://github.com/jackpoi/pbz-info/releases/latest) and run it. Windows x64 single file, no Python installation required.
 
 The game does not need to be running. If no key is cached yet, select the game's `PBZ.exe` once (usually `...\PBZ\platform\steam\PBZ.exe`); it is remembered afterwards.
 
@@ -23,7 +23,6 @@ The game does not need to be running. If no key is cached yet, select the game's
 |---|---|
 | Current-cycle scope | Current cycle only; the boss list spans difficulties, and a boss never repeats across them |
 | Boss records | Deaths, kill status, kill difficulty and best clear time for every boss |
-| Readable times | Clear times show as `5分00.0秒` / `45.0秒` instead of milliseconds |
 | Run overview | Cycle playtime, total deaths and bosses defeated |
 | Auto refresh | Re-reads after the save changes; keeps the last good snapshot if reading fails |
 | Manual selection | Choose a `.sav` file or a folder containing `PBZSaveGame.sav` when auto-detection fails |
@@ -36,7 +35,7 @@ The game does not need to be running. If no key is cached yet, select the game's
 1. Launch `pbz-info.exe`.
 2. The app auto-detects the Steam library and save directory. If it cannot, select a `.sav` file or a save folder manually.
 3. If prompted for a key, select the game's `PBZ.exe` once.
-4. Use the “刷新” (Refresh) button to force a re-read, or “切换存档” (Switch save) to choose another save.
+4. Use “刷新” (Refresh) to force a re-read, and “切换存档” (Switch save) to choose another save.
 
 ## Build
 
@@ -53,8 +52,8 @@ The output is `dist/pbz-info.exe`.
 ## Development
 
 ```powershell
-python run.py                      # launch the window (build the frontend first)
-python -m pytest tests -q          # 110 regression tests (2 need real game data; skipped by default)
+python run.py                      # launch the window
+python -m pytest tests -q          # regression tests
 python tools\dump.py               # print normalized save JSON
 python tools\dump.py --save-dir "D:\...\Steam\<SteamID>"
 ```
@@ -77,7 +76,8 @@ npm run dev                        # browser-only development with mock data
 npm run build                      # emits web/dist/index.html (single file, used by the build)
 ```
 
-Most tests use synthetic saves and require no game installation. Real Oodle-stream regressions run only when `PBZ_TEST_EXE` (game executable) and `PBZ_TEST_SAVE` (real save path) are set; otherwise they are skipped.
+Most tests use synthetic saves and require no game installation. Real Oodle-stream regressions need
+`PBZ_TEST_EXE` (game executable) and `PBZ_TEST_SAVE` (real save path); they are skipped when unset.
 **The app itself does not require the game**: when auto-detection fails, pick a save file or folder directly.
 
 ## Project layout
@@ -96,7 +96,7 @@ build/        PyInstaller spec and packaging assets
 
 ## Read-only guarantee
 
-This app does not write save files or modify game files. It stays offline unless you press “Check for updates”, which performs a single read of the latest GitHub release.
+Never writes saves or modifies game files.
 
 ## License
 
